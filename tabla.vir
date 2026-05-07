@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Tabla</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      width: 90%;
+      max-width: 1000px;
+      background: #1b1b1b;
+      border-radius: 20px;
+      padding: 25px;
+      box-shadow: 0 0 20px rgba(255,255,255,0.08);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .tabla-area {
+      display: flex;
+      justify-content: center;
+      gap: 50px;
+      margin-bottom: 25px;
+    }
+
+    .drum {
+      border-radius: 50%;
+      position: relative;
+      transition: 0.15s;
+    }
+
+    .bayan {
+      width: 220px;
+      height: 220px;
+      background: radial-gradient(circle, #444 10%, #777 60%, #333 100%);
+    }
+
+    .dayan {
+      width: 180px;
+      height: 180px;
+      background: radial-gradient(circle, #555 10%, #999 60%, #444 100%);
+      margin-top: 20px;
+    }
+
+    .center {
+      width: 60px;
+      height: 60px;
+      background: black;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .active {
+      box-shadow: 0 0 35px gold;
+      transform: scale(1.05);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 10px;
+      background: #ff9800;
+      color: white;
+      font-size: 15px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #ffa726;
+    }
+
+    textarea {
+      width: 100%;
+      height: 100px;
+      border-radius: 12px;
+      border: none;
+      padding: 15px;
+      font-size: 18px;
+      background: #222;
+      color: white;
+      resize: none;
+      box-sizing: border-box;
+    }
+
+    .slider-container {
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    input[type=range] {
+      width: 80%;
+    }
+
+    .current-bol {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 22px;
+      color: gold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🥁 Smart Tabla</h1>
+
+    <div class="tabla-area">
+      <div id="bayan" class="drum bayan">
+        <div class="center"></div>
+      </div>
+
+      <div id="dayan" class="drum dayan">
+        <div class="center"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button onclick="addBol('Dha')">Dha</button>
+      <button onclick="addBol('Dhin')">Dhin</button>
+      <button onclick="addBol('Na')">Na</button>
+      <button onclick="addBol('Tin')">Tin</button>
+      <button onclick="addBol('Ge')">Ge</button>
+      <button onclick="addBol('Ke')">Ke</button>
+      <button onclick="loadTeenTaal()">Teen Taal</button>
+    </div>
+
+    <textarea id="sequence" placeholder="Enter bols here..."></textarea>
+
+    <div class="slider-container">
+      <p>BPM: <span id="bpmValue">90</span></p>
+      <input type="range" id="bpm" min="40" max="240" value="90" />
+    </div>
+
+    <div class="controls" style="margin-top:20px;">
+      <button onclick="playSequence()">▶ Play</button>
+      <button onclick="stopSequence()">⏹ Stop</button>
+      <button onclick="clearSequence()">🗑 Clear</button>
+    </div>
+
+    <div class="current-bol" id="currentBol">Current Bol: -</div>
+  </div>
+
+  <script>
+    const sequenceInput = document.getElementById('sequence');
+    const bpmSlider = document.getElementById('bpm');
+    const bpmValue = document.getElementById('bpmValue');
+    const currentBol = document.getElementById('currentBol');
+
+    const bayan = document.getElementById('bayan');
+    const dayan = document.getElementById('dayan');
+
+    let playing = false;
+
+    bpmSlider.addEventListener('input', () => {
+      bpmValue.innerText = bpmSlider.value;
+    });
+
+    function addBol(bol) {
+      sequenceInput.value += bol + ' ';
+    }
+
+    function clearSequence() {
+      sequenceInput.value = '';
+    }
+
+    function loadTeenTaal() {
+      sequenceInput.value = 'Dha Dhin Dhin Dha Dha Dhin Dhin Dha Na Tin Tin Na Dha Dhin Dhin Dha';
+    }
+
+    function highlightDrum(bol) {
+      bayan.classList.remove('active');
+      dayan.classList.remove('active');
+
+      if (['Ge', 'Ke'].includes(bol)) {
+        bayan.classList.add('active');
+      }
+      else if (['Na', 'Tin'].includes(bol)) {
+        dayan.classList.add('active');
+      }
+      else if (['Dha', 'Dhin'].includes(bol)) {
+        bayan.classList.add('active');
+        dayan.classList.add('active');
+      }
+
+      setTimeout(() => {
+        bayan.classList.remove('active');
+        dayan.classList.remove('active');
+      }, 200);
+    }
+
+    function playTone(freq) {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      oscillator.frequency.value = freq;
+      oscillator.type = 'tabla';
+
+      gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.2);
+
+      oscillator.start();
+      oscillator.stop(audioCtx.currentTime + 0.2);
+    }
+
+    const bolFrequency = {
+      'Dha': 180,
+      'Dhin': 220,
+      'Na': 400,
+      'Tin': 500,
+      'Ge': 120,
+      'Ke': 140
+    };
+
+    async function playSequence() {
+      if (playing) return;
+      playing = true;
+
+      const bols = sequenceInput.value.trim().split(/\s+/);
+      const bpm = parseInt(bpmSlider.value);
+      const interval = 60000 / bpm;
+
+      for (let bol of bols) {
+        if (!playing) break;
+
+        currentBol.innerText = 'Current Bol: ' + bol;
+
+        highlightDrum(bol);
+
+        if (bolFrequency[bol]) {
+          playTone(bolFrequency[bol]);
+        }
+
+        await new Promise(resolve => setTimeout(resolve, interval));
+      }
+
+      currentBol.innerText = 'Current Bol: -';
+      playing = false;
+    }
+
+    function stopSequence() {
+      playing = false;
+      currentBol.innerText = 'Current Bol: -';
+    }
+  </script>
+</body>
+</html>
